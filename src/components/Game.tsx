@@ -78,6 +78,7 @@ type WorldRenderState = {
   gridSize: number;
   offset: { x: number; y: number };
   zoom: number;
+  speed: number;
 };
 
 const CAR_COLORS = ['#f87171', '#fbbf24', '#34d399', '#60a5fa', '#c084fc'];
@@ -1089,7 +1090,7 @@ function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile }: {
   setSelectedTile: (tile: { x: number; y: number } | null) => void;
 }) {
   const { state, placeAtTile } = useGame();
-  const { grid, gridSize, selectedTool } = state;
+  const { grid, gridSize, selectedTool, speed } = state;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const carsCanvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1107,6 +1108,7 @@ function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile }: {
     gridSize,
     offset,
     zoom,
+    speed,
   });
   const [lastPlacedTile, setLastPlacedTile] = useState<{ x: number; y: number } | null>(null);
   const [imagesLoaded, setImagesLoaded] = useState(false);
@@ -1132,6 +1134,10 @@ function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile }: {
   useEffect(() => {
     worldStateRef.current.zoom = zoom;
   }, [zoom]);
+
+  useEffect(() => {
+    worldStateRef.current.speed = speed;
+  }, [speed]);
 
   const spawnRandomCar = useCallback(() => {
     const { grid: currentGrid, gridSize: currentGridSize } = worldStateRef.current;
@@ -1165,11 +1171,14 @@ function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile }: {
   }, []);
 
   const updateCars = useCallback((delta: number) => {
-    const { grid: currentGrid, gridSize: currentGridSize } = worldStateRef.current;
+    const { grid: currentGrid, gridSize: currentGridSize, speed: currentSpeed } = worldStateRef.current;
     if (!currentGrid || currentGridSize <= 0) {
       carsRef.current = [];
       return;
     }
+    
+    // Speed multiplier: 0 = paused, 1 = normal, 2 = fast (2x), 3 = very fast (4x)
+    const speedMultiplier = currentSpeed === 0 ? 0 : currentSpeed === 1 ? 1 : currentSpeed === 2 ? 2.5 : 4;
     
     const maxCars = Math.min(40, Math.max(4, Math.floor(currentGridSize / 2)));
     carSpawnTimerRef.current -= delta;
@@ -1194,7 +1203,7 @@ function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile }: {
         continue;
       }
       
-      car.progress += car.speed * delta;
+      car.progress += car.speed * delta * speedMultiplier;
       let guard = 0;
       while (car.progress >= 1 && guard < 4) {
         guard++;
@@ -1493,10 +1502,10 @@ function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile }: {
     return false;
   }
   
-  // Helper function to check if a tile is part of a building that needs parking lot (stadium, hospital, power_plant)
+  // Helper function to check if a tile is part of a building that needs parking lot (stadium, hospital, power_plant, industrial)
   function isPartOfParkingLotBuilding(gridX: number, gridY: number): boolean {
     const maxSize = 4; // Maximum building size (airport is 4x4)
-    const parkingLotBuildings: BuildingType[] = ['stadium', 'hospital', 'power_plant'];
+    const parkingLotBuildings: BuildingType[] = ['stadium', 'hospital', 'power_plant', 'factory_small', 'factory_medium', 'factory_large', 'warehouse'];
     
     for (let dy = 0; dy < maxSize; dy++) {
       for (let dx = 0; dx < maxSize; dx++) {
@@ -1544,8 +1553,10 @@ function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile }: {
     const isPartOfBuilding = tile.building.type === 'empty' && isPartOfMultiTileBuilding(tile.x, tile.y);
     const isBuilding = isDirectBuilding || isPartOfBuilding;
     
-    // Check if this tile is part of a parking lot building (stadium, hospital, power_plant)
-    const isParkingLot = (tile.building.type === 'stadium' || tile.building.type === 'hospital' || tile.building.type === 'power_plant') ||
+    // Check if this tile is part of a parking lot building (stadium, hospital, power_plant, industrial)
+    const isParkingLot = (tile.building.type === 'stadium' || tile.building.type === 'hospital' || tile.building.type === 'power_plant' ||
+                          tile.building.type === 'factory_small' || tile.building.type === 'factory_medium' || 
+                          tile.building.type === 'factory_large' || tile.building.type === 'warehouse') ||
                          (tile.building.type === 'empty' && isPartOfParkingLotBuilding(tile.x, tile.y));
     
     if (tile.building.type === 'water') {
