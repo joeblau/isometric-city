@@ -1753,79 +1753,102 @@ function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile }: {
     const south = hasRoad(gridX + 1, gridY);  // bottom-right edge
     const west = hasRoad(gridX, gridY + 1);   // bottom-left edge
     
-    // Road width - slightly narrower for cleaner look
-    const roadW = w * 0.12;
-    const roadH = h * 0.12;
+    // Road width - aligned with gridlines
+    const roadW = w * 0.14;
+    const roadH = h * 0.14;
     
-    // Edge stop distance - stop roads before tile edges to prevent overlap
-    // Using 0.88 means roads stop at 88% of the way to the edge
-    const edgeStop = 0.88;
+    // Edge stop distance - extend roads almost to the edge for better connection
+    // Using 0.98 means roads extend to 98% of the way to the edge
+    const edgeStop = 0.98;
     
     // Draw road segments to connected edges
+    // The edges align with the isometric diamond gridlines:
+    // North (top-left): from (x, y + h/2) to (x + w/2, y) - midpoint at (x + w/4, y + h/4)
+    // East (top-right): from (x + w/2, y) to (x + w, y + h/2) - midpoint at (x + 3w/4, y + h/4)
+    // South (bottom-right): from (x + w, y + h/2) to (x + w/2, y + h) - midpoint at (x + 3w/4, y + 3h/4)
+    // West (bottom-left): from (x + w/2, y + h) to (x, y + h/2) - midpoint at (x + w/4, y + 3h/4)
     ctx.fillStyle = '#4a4a4a';
     
-    // Helper to calculate stop position: center + (edge - center) * edgeStop
-    // North edge: (x + w * 0.25, y + h * 0.25)
-    // East edge: (x + w * 0.75, y + h * 0.25)
-    // South edge: (x + w * 0.75, y + h * 0.75)
-    // West edge: (x + w * 0.25, y + h * 0.75)
+    // Calculate edge midpoints (where gridlines meet)
+    const northEdgeX = x + w * 0.25;
+    const northEdgeY = y + h * 0.25;
+    const eastEdgeX = x + w * 0.75;
+    const eastEdgeY = y + h * 0.25;
+    const southEdgeX = x + w * 0.75;
+    const southEdgeY = y + h * 0.75;
+    const westEdgeX = x + w * 0.25;
+    const westEdgeY = y + h * 0.75;
     
-    // North segment (to top-left) - stops before edge
+    // Calculate direction vectors for each edge (normalized)
+    // These align with the gridline directions
+    const northDx = (northEdgeX - cx) / Math.hypot(northEdgeX - cx, northEdgeY - cy);
+    const northDy = (northEdgeY - cy) / Math.hypot(northEdgeX - cx, northEdgeY - cy);
+    const eastDx = (eastEdgeX - cx) / Math.hypot(eastEdgeX - cx, eastEdgeY - cy);
+    const eastDy = (eastEdgeY - cy) / Math.hypot(eastEdgeX - cx, eastEdgeY - cy);
+    const southDx = (southEdgeX - cx) / Math.hypot(southEdgeX - cx, southEdgeY - cy);
+    const southDy = (southEdgeY - cy) / Math.hypot(southEdgeX - cx, southEdgeY - cy);
+    const westDx = (westEdgeX - cx) / Math.hypot(westEdgeX - cx, westEdgeY - cy);
+    const westDy = (westEdgeY - cy) / Math.hypot(westEdgeX - cx, westEdgeY - cy);
+    
+    // Perpendicular vectors for road width (rotated 90 degrees)
+    const getPerp = (dx: number, dy: number) => ({ nx: -dy, ny: dx });
+    
+    // North segment (to top-left) - aligned with gridline
     if (north) {
-      const edgeX = x + w * 0.25;
-      const edgeY = y + h * 0.25;
-      const stopX = cx + (edgeX - cx) * edgeStop;
-      const stopY = cy + (edgeY - cy) * edgeStop;
+      const stopX = cx + (northEdgeX - cx) * edgeStop;
+      const stopY = cy + (northEdgeY - cy) * edgeStop;
+      const perp = getPerp(northDx, northDy);
+      const halfWidth = roadW * 0.5;
       ctx.beginPath();
-      ctx.moveTo(cx - roadW * 0.7, cy - roadH * 0.7);
-      ctx.lineTo(stopX - roadW * 0.5, stopY - roadH * 0.5);
-      ctx.lineTo(stopX + roadW * 0.5, stopY + roadH * 0.5);
-      ctx.lineTo(cx + roadW * 0.7, cy + roadH * 0.7);
+      ctx.moveTo(cx + perp.nx * halfWidth, cy + perp.ny * halfWidth);
+      ctx.lineTo(stopX + perp.nx * halfWidth, stopY + perp.ny * halfWidth);
+      ctx.lineTo(stopX - perp.nx * halfWidth, stopY - perp.ny * halfWidth);
+      ctx.lineTo(cx - perp.nx * halfWidth, cy - perp.ny * halfWidth);
       ctx.closePath();
       ctx.fill();
     }
     
-    // East segment (to top-right) - stops before edge
+    // East segment (to top-right) - aligned with gridline
     if (east) {
-      const edgeX = x + w * 0.75;
-      const edgeY = y + h * 0.25;
-      const stopX = cx + (edgeX - cx) * edgeStop;
-      const stopY = cy + (edgeY - cy) * edgeStop;
+      const stopX = cx + (eastEdgeX - cx) * edgeStop;
+      const stopY = cy + (eastEdgeY - cy) * edgeStop;
+      const perp = getPerp(eastDx, eastDy);
+      const halfWidth = roadW * 0.5;
       ctx.beginPath();
-      ctx.moveTo(cx + roadW * 0.7, cy - roadH * 0.7);
-      ctx.lineTo(stopX + roadW * 0.5, stopY - roadH * 0.5);
-      ctx.lineTo(stopX - roadW * 0.5, stopY + roadH * 0.5);
-      ctx.lineTo(cx - roadW * 0.7, cy + roadH * 0.7);
+      ctx.moveTo(cx + perp.nx * halfWidth, cy + perp.ny * halfWidth);
+      ctx.lineTo(stopX + perp.nx * halfWidth, stopY + perp.ny * halfWidth);
+      ctx.lineTo(stopX - perp.nx * halfWidth, stopY - perp.ny * halfWidth);
+      ctx.lineTo(cx - perp.nx * halfWidth, cy - perp.ny * halfWidth);
       ctx.closePath();
       ctx.fill();
     }
     
-    // South segment (to bottom-right) - stops before edge
+    // South segment (to bottom-right) - aligned with gridline
     if (south) {
-      const edgeX = x + w * 0.75;
-      const edgeY = y + h * 0.75;
-      const stopX = cx + (edgeX - cx) * edgeStop;
-      const stopY = cy + (edgeY - cy) * edgeStop;
+      const stopX = cx + (southEdgeX - cx) * edgeStop;
+      const stopY = cy + (southEdgeY - cy) * edgeStop;
+      const perp = getPerp(southDx, southDy);
+      const halfWidth = roadW * 0.5;
       ctx.beginPath();
-      ctx.moveTo(cx + roadW * 0.7, cy + roadH * 0.7);
-      ctx.lineTo(stopX + roadW * 0.5, stopY + roadH * 0.5);
-      ctx.lineTo(stopX - roadW * 0.5, stopY - roadH * 0.5);
-      ctx.lineTo(cx - roadW * 0.7, cy - roadH * 0.7);
+      ctx.moveTo(cx + perp.nx * halfWidth, cy + perp.ny * halfWidth);
+      ctx.lineTo(stopX + perp.nx * halfWidth, stopY + perp.ny * halfWidth);
+      ctx.lineTo(stopX - perp.nx * halfWidth, stopY - perp.ny * halfWidth);
+      ctx.lineTo(cx - perp.nx * halfWidth, cy - perp.ny * halfWidth);
       ctx.closePath();
       ctx.fill();
     }
     
-    // West segment (to bottom-left) - stops before edge
+    // West segment (to bottom-left) - aligned with gridline
     if (west) {
-      const edgeX = x + w * 0.25;
-      const edgeY = y + h * 0.75;
-      const stopX = cx + (edgeX - cx) * edgeStop;
-      const stopY = cy + (edgeY - cy) * edgeStop;
+      const stopX = cx + (westEdgeX - cx) * edgeStop;
+      const stopY = cy + (westEdgeY - cy) * edgeStop;
+      const perp = getPerp(westDx, westDy);
+      const halfWidth = roadW * 0.5;
       ctx.beginPath();
-      ctx.moveTo(cx - roadW * 0.7, cy + roadH * 0.7);
-      ctx.lineTo(stopX - roadW * 0.5, stopY + roadH * 0.5);
-      ctx.lineTo(stopX + roadW * 0.5, stopY - roadH * 0.5);
-      ctx.lineTo(cx + roadW * 0.7, cy - roadH * 0.7);
+      ctx.moveTo(cx + perp.nx * halfWidth, cy + perp.ny * halfWidth);
+      ctx.lineTo(stopX + perp.nx * halfWidth, stopY + perp.ny * halfWidth);
+      ctx.lineTo(stopX - perp.nx * halfWidth, stopY - perp.ny * halfWidth);
+      ctx.lineTo(cx - perp.nx * halfWidth, cy - perp.ny * halfWidth);
       ctx.closePath();
       ctx.fill();
     }
@@ -1840,60 +1863,52 @@ function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile }: {
     ctx.closePath();
     ctx.fill();
     
-    // Draw road markings (yellow dashed lines) - shorter and cleaner
+    // Draw road markings (yellow dashed lines) - aligned with gridlines
     ctx.strokeStyle = '#fbbf24';
     ctx.lineWidth = 1.2;
     ctx.setLineDash([3, 3]);
     ctx.lineCap = 'round';
     
-    // Marking length - shorter to stay within tile boundaries
-    const markingLength = 0.75; // 75% of the way to edge stop
+    // Marking length - extend most of the way
+    const markingLength = 0.85; // 85% of the way to edge stop
     
     // North marking (toward top-left)
     if (north) {
-      const edgeX = x + w * 0.25;
-      const edgeY = y + h * 0.25;
-      const stopX = cx + (edgeX - cx) * edgeStop * markingLength;
-      const stopY = cy + (edgeY - cy) * edgeStop * markingLength;
+      const stopX = cx + (northEdgeX - cx) * edgeStop * markingLength;
+      const stopY = cy + (northEdgeY - cy) * edgeStop * markingLength;
       ctx.beginPath();
-      ctx.moveTo(cx - 2, cy - 2);
-      ctx.lineTo(stopX - 2, stopY - 2);
+      ctx.moveTo(cx + northDx * 2, cy + northDy * 2);
+      ctx.lineTo(stopX + northDx * 2, stopY + northDy * 2);
       ctx.stroke();
     }
     
     // East marking (toward top-right)
     if (east) {
-      const edgeX = x + w * 0.75;
-      const edgeY = y + h * 0.25;
-      const stopX = cx + (edgeX - cx) * edgeStop * markingLength;
-      const stopY = cy + (edgeY - cy) * edgeStop * markingLength;
+      const stopX = cx + (eastEdgeX - cx) * edgeStop * markingLength;
+      const stopY = cy + (eastEdgeY - cy) * edgeStop * markingLength;
       ctx.beginPath();
-      ctx.moveTo(cx + 2, cy - 2);
-      ctx.lineTo(stopX + 2, stopY - 2);
+      ctx.moveTo(cx + eastDx * 2, cy + eastDy * 2);
+      ctx.lineTo(stopX + eastDx * 2, stopY + eastDy * 2);
       ctx.stroke();
     }
     
     // South marking (toward bottom-right)
     if (south) {
-      const edgeX = x + w * 0.75;
-      const edgeY = y + h * 0.75;
-      const stopX = cx + (edgeX - cx) * edgeStop * markingLength;
-      const stopY = cy + (edgeY - cy) * edgeStop * markingLength;
+      const stopX = cx + (southEdgeX - cx) * edgeStop * markingLength;
+      const stopY = cy + (southEdgeY - cy) * edgeStop * markingLength;
       ctx.beginPath();
-      ctx.moveTo(cx + 2, cy + 2);
-      ctx.lineTo(stopX + 2, stopY + 2);
+      ctx.moveTo(cx + southDx * 2, cy + southDy * 2);
+      ctx.lineTo(stopX + southDx * 2, stopY + southDy * 2);
       ctx.stroke();
     }
     
     // West marking (toward bottom-left)
     if (west) {
-      const edgeX = x + w * 0.25;
-      const edgeY = y + h * 0.75;
-      const stopX = cx + (edgeX - cx) * edgeStop * markingLength;
-      const stopY = cy + (edgeY - cy) * edgeStop * markingLength;
+      const stopX = cx + (westEdgeX - cx) * edgeStop * markingLength;
+      const stopY = cy + (westEdgeY - cy) * edgeStop * markingLength;
       ctx.beginPath();
-      ctx.moveTo(cx - 2, cy + 2);
-      ctx.lineTo(stopX - 2, stopY + 2);
+      ctx.moveTo(cx + westDx * 2, cy + westDy * 2);
+      ctx.lineTo(stopX + westDx * 2, stopY + westDy * 2);
       ctx.stroke();
     }
     
