@@ -65,7 +65,7 @@ const BUILDING_IMAGES: Partial<Record<BuildingType, { src: string; tileWidth: nu
   tennis: { src: '/assets/buildings/tennis.png', tileWidth: 1, tileHeight: 1, scale: 0.95 },
   police_station: { src: '/assets/buildings/police_station.png', tileWidth: 1, tileHeight: 1 },
   school: { src: '/assets/buildings/school.png', tileWidth: 2, tileHeight: 2 },
-  university: { src: '/assets/buildings/university.png', tileWidth: 3, tileHeight: 3, scale: 0.9, verticalOffset: 20, horizontalOffset: 15 },
+  university: { src: '/assets/buildings/university.png', tileWidth: 3, tileHeight: 3, scale: 0.81, verticalOffset: 20, horizontalOffset: 15 },
   // Utilities
   water_tower: { src: '/assets/buildings/watertower.png', tileWidth: 1, tileHeight: 1 },
   power_plant: { src: '/assets/buildings/powerplant.png', tileWidth: 2, tileHeight: 2 },

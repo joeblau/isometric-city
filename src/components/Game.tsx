@@ -2849,9 +2849,9 @@ function CanvasIsometricGrid({ overlayMode, selectedTile, setSelectedTile }: {
         imageSrc = BUILDING_IMAGES[buildingType];
         if (buildingType === 'power_plant') sizeMultiplier = 2.25;
         else if (buildingType === 'stadium') sizeMultiplier = 1.372;
-        else if (buildingType === 'museum') sizeMultiplier = 0.6723; // 60% smaller than stadium (1.372 * 0.7 * 0.7)
+        else if (buildingType === 'museum') sizeMultiplier = 0.60507; // 60% smaller than stadium (1.372 * 0.7 * 0.7), scaled down 10%
         else if (buildingType === 'space_program') sizeMultiplier = 2.94;
-        else if (buildingType === 'university') sizeMultiplier = 1.96; // 30% smaller (2.8 * 0.7)
+        else if (buildingType === 'university') sizeMultiplier = 1.764; // 30% smaller (2.8 * 0.7), scaled down 10%
         else if (buildingType === 'hospital') sizeMultiplier = 2.25;
         else if (buildingType === 'school') sizeMultiplier = 2.25;
         else if (buildingType === 'fire_station') sizeMultiplier = 1.006;
